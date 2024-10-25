@@ -1,0 +1,13 @@
+name: chatbot-app
+title: chatbot-app
+username: isabl-li
+account: isabl-li
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13090518
+bundleId: 9259175
+url: https://isabl-li.shinyapps.io/chatbot-app/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .Rprofile|renv.lock
