@@ -13,8 +13,6 @@ library(glue)
 source("utilitise.R")
 
 
-
-
 # Define UI ---------------------------------------------------------------
 
 ui <- bslib::page_fillable(
@@ -24,6 +22,7 @@ ui <- bslib::page_fillable(
   # Sidebar configuration
   sidebar = sidebar(open = "closed"),  # Initialize the sidebar as closed
 
+  type_effect(),
   press_enter_to_chat(),
 
   # Main content with a chat card
@@ -45,6 +44,13 @@ ui <- bslib::page_fillable(
         #   style = "margin-top: -18px;"
         # ),
         selectInput("model", "Model", choices = c("gpt-3.5-turbo", "gpt-4-turbo-preview")),
+        shiny::checkboxInput("speech", "Enable speech", value = FALSE),
+        shiny::p(
+          shiny::tags$small(
+            style = "font-size: 0.8em;",
+            "Enable speech to text for a more interactive experience"
+          ),
+          style = "margin-top: -18px;"),
         title = "Settings",
       ),
       class = "d-flex align-items-center justify-content-between"  # Improve alignment
@@ -86,75 +92,43 @@ ui <- bslib::page_fillable(
 
 
 server <- function(input, output, session) {
-  # initialised reactive values
-  rv <- shiny::reactiveValues()
+  rv <- reactiveValues(chat_history = NULL)
 
-  # initialise chat history
-  rv$chat_history <- NULL
-
-  # observe chat button
-  shiny::observe({
-
-    # ensure prompt is not empty
-    shiny::req(input$prompt != "")
-    # use customised function chat
-    response <- chat(input$prompt,
-                     input$model,
-                     rv$chat_history,
-                     Sys.getenv("OPENAI_API_KEY")
-                     )
-
-    # update chat history
+  observeEvent(input$chat, {
+    req(input$prompt != "")
+    response <- chat(input$prompt, input$model, rv$chat_history, Sys.getenv("OPENAI_API_KEY"), speech = input$speech)
     rv$chat_history <- update_history(rv$chat_history, input$prompt, response)
 
-    output$chat_history <- shiny::renderUI({
-      # ensure chat history is not null
-      shiny::req(!is.null(rv$chat_history))
+    output$chat_history <- renderUI({
+      req(!is.null(rv$chat_history))
 
       shiny::tagList(
         purrr::map(
           .x = rv$chat_history,
           .f = function(x) {
-            # Set alignment based on the role
             alignment <- if (x$role == "user") "text-align: right;" else "text-align: left;"
-            # Add styling for the grey box
             box_style <- "background-color: #f1f1f1; border-radius: 10px; padding: 10px; margin: 10px 0; max-width: 80%;"
-
             role_display <- if (x$role == "assistant") "🤖: " else "👤: "
+            role_style <- if (x$role == "user") glue::glue("{box_style} {alignment}; margin-left: auto;") else glue::glue("{box_style} {alignment}; margin-right: auto;")
 
-            role_style <- if (x$role == "user") {
-              glue::glue("{box_style} {alignment}; margin-left: auto;")
-            } else {
-              glue::glue("{box_style} {alignment}; margin-right: auto;")
-            }
+            unique_id <- glue::glue("message-{x$role}-{floor(runif(1, 1, 100000))}")
 
-            # Format each chat entry with custom CSS for alignment
             shiny::div(
               style = role_style,
-              markdown(glue::glue("{role_display} {x$content}"))
+              shiny::div(role_display, shiny::span(id = unique_id)),
+              tags$script(HTML(glue::glue("typeEffect('{unique_id}', '{x$content}', 20);")))
             )
           }
-        )
+        ),
+        if(input$speech) {
+          shiny::tags$audio(src = "/audio/output.mp3", type = "audio/mp3", controls = "controls", autoplay = TRUE)
+        }
       )
-
-        # # display chat history
-        # bslib::card(
-        #   map(
-        #     .x = rv$chat_history,
-        #     .f = \(x) markdown(glue("**{x$role}**: {x$content}")) # Format each chat entry
-        #   ),
-        #   max_height = "500px", # Set max height for chat history
-        # )
-
     })
 
-    updateTextAreaInput(session, "prompt",
-                        value = "", # Clear the prompt input field after submission
-                        placeholder = "Ready for more input..." # Update placeholder text
-    )
-
-  }) %>% shiny::bindEvent(input$chat)
-
+    updateTextAreaInput(session, "prompt", value = "", placeholder = "Ready for more input...")
+  })
 }
 
 shiny::shinyApp(ui, server)
+
