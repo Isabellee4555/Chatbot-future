@@ -111,13 +111,24 @@ server <- function(input, output, session) {
             role_display <- if (x$role == "assistant") "🤖: " else "👤: "
             role_style <- if (x$role == "user") glue::glue("{box_style} {alignment}; margin-left: auto;") else glue::glue("{box_style} {alignment}; margin-right: auto;")
 
-            unique_id <- glue::glue("message-{x$role}-{floor(runif(1, 1, 100000))}")
+            if(x$role == "assistant" &
+               x$content  == (rv$chat_history)[[length(rv$chat_history)]]$content){
+              shiny::div(
+                id = "latest_response",
+                style = role_style,
+                tags$script(HTML(glue::glue("
+          setTimeout(function() {{
+            typeEffect('latest_response', `{role_display} {x$content}`, 40);
+          }}, 100);  // Delay to allow rendering
+        ")))
+                )
+            }else{
+              shiny::div(
+                style = role_style,
+                shiny::markdown(glue::glue("{role_display} {x$content}")))
+            }
 
-            shiny::div(
-              style = role_style,
-              shiny::div(role_display, shiny::span(id = unique_id)),
-              tags$script(HTML(glue::glue("typeEffect('{unique_id}', '{x$content}', 20);")))
-            )
+
           }
         ),
         if(input$speech) {
@@ -131,4 +142,12 @@ server <- function(input, output, session) {
 }
 
 shiny::shinyApp(ui, server)
+
+
+
+
+
+
+
+
 
