@@ -59,7 +59,7 @@ chat <- function(user_message,
   }
 }
 
-save_audio_file <- function(audio_content, file_path = "www/audio/output.mp3") {
+save_audio_file <- function(audio_content, file_path = "www/output.mp3") {
   # Write the raw binary data to an MP3 file
   writeBin(audio_content, file_path)
 }
@@ -100,7 +100,7 @@ text_to_speech <- function(text, api_key){
   audio_content <- httr2::resp_body_raw(response_audio)
 
   # Save the audio content to a file
-  save_audio_file(audio_content, "www/audio/output.mp3")
+  save_audio_file(audio_content, "www/output.mp3")
 
   return(audio_content)
 }

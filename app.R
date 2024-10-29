@@ -132,7 +132,7 @@ server <- function(input, output, session) {
           }
         ),
         if(input$speech) {
-          shiny::tags$audio(src = "/audio/output.mp3", type = "audio/mp3", controls = "controls", autoplay = TRUE)
+          shiny::tags$audio(src = "output.mp3", type = "audio/mp3", controls = "controls", autoplay = TRUE)
         }
       )
     })
